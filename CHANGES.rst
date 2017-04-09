@@ -18,8 +18,18 @@ Release History
    - Removed
    - Fixed
 
-0.1.2 (unreleased)
+0.1.2.dev2 (unreleased)
 ==================
+Support for sqlite and csv stores, automatically set project from git repo
+adaptiware
+livia-b
+To fix/drop:
+    * json store
+    * interrupt
+    * safe edit
+    * tag
+    * note
+
 
 
 

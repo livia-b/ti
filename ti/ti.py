@@ -3,64 +3,32 @@
 ti is a simple and extensible time tracker for the command line. Visit the
 project page (http://ti.sharats.me) for more details.
 """
-
-from __future__ import print_function
-from __future__ import unicode_literals
 import argparse
+from .actions import  Actions
 import sys
-from .actions import Actions
-import sys
+import os
 
+usage = """ ti <command> [<args>]
 
-# def parse_args(argv=sys.argv):
-#     use_color = False
-#
-#     argv = [arg for arg in argv]
-#
-#     if '--no-color' in argv:
-#         use_color = False
-#         argv.remove('--no-color')
-#
-#     # prog = argv[0]
-#     if len(argv) == 1:
-#         helpful_exit('You must specify a command.')
-#
-#     head = argv[1]
-#     tail = argv[2:]
-#
-#     elif head in ['e', 'edit']:
-#         fn = action_edit
-#         args = {}
-#
-#     elif head in ['t', 'tag']:
-#         if not tail:
-#             helpful_exit('Please provide at least one tag to add.')
-#
-#         fn = action_tag
-#         args = {'tags': tail}
-#
-#     elif head in ['n', 'note']:
-#         if not tail:
-#             helpful_exit('Please provide some text to be noted.')
-#
-#         fn = action_note
-#         args = {'content': ' '.join(tail)}
-#
-#     elif head in ['i', 'interrupt']:
-#         if not tail:
-#             helpful_exit('Need the name of whatever you are working on.')
-#
-#         fn = action_interrupt
-#         args = {
-#             'name': tail[0],
-#             'time': to_datetime(' '.join(tail[1:])),
-#         }
-#
-#     else:
-#         helpful_exit("I don't understand '" + head + "'")
-#
-#     return fn, args
+ti is a simple and extensible time tracker for the command line.
+Visit the project page (http://ti.sharats.me) for more details.
 
+Commands:
+  --no-color
+  o, on        Start new tracking
+  f, fin       Stop currently running tracking
+  s, status    Show current status
+  l, log       List time logs for period with possible values today (default), week or month
+  r, report    Aggregated report for period with possible values today (default), week or month
+  e, edit
+
+Old commands:
+  ti (t|tag) <tag>...
+  ti (n|note) <note-text>...
+
+  ti (i|interrupt)
+
+"""
 
 # Inpired by Multi-level argparse by @chase_seibert
 # http://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
@@ -71,34 +39,18 @@ class Ti(object):
         'status': ['s', 'status'],
         'log': ['l', 'log'],
         'report': ['r', 'report'],
+        'edit': ['e', 'edit']
     }
     actions = None
 
-    def __init__(self):
-        self.actions = Actions()
+    def __init__(self, store_file ):
+        self.actions = Actions( store_file)
         parser = argparse.ArgumentParser(
-            usage=""" ti <command> [<args>]
-
-ti is a simple and extensible time tracker for the command line.
-Visit the project page (http://ti.sharats.me) for more details.
-
-Commands:
-  o, on        Start new tracking
-  f, fin       Stop currently running tracking
-  s, status    Show current status
-  l, log       List time logs for period with possible values today (default), week or month
-  r, report    Aggregated report for period with possible values today (default), week or month
-
-Old commands:
-  ti (t|tag) <tag>...
-  ti (n|note) <note-text>...
-
-  ti (e|edit)
-  ti (i|interrupt)
-  ti --no-color
-
-""")
+            usage=usage)
         parser.add_argument('command', help='Subcommand to run')
+        parser.add_argument('--no-color', default=False, action="store_true",
+                            help="don't use color in console output")
+
         # parse_args defaults to [1:] for args, but you need to
         # exclude the rest of the args too, or validation will fail
         args = parser.parse_args(sys.argv[1:2])
@@ -170,9 +122,16 @@ Old commands:
         args = parser.parse_args(sys.argv[2:])
         self.actions.action_report(**vars(args))
 
+    def edit(self):
+        parser = argparse.ArgumentParser(
+            prog='ti edit',
+            description='edit')
+        args = parser.parse_args(sys.argv[2:])
+        self.actions.action_edit(**vars(args))
+
 
 def main():
-    Ti()
+    Ti(os.environ.get('TI-SHEET',None))
 
 if __name__ == '__main__':
     main()

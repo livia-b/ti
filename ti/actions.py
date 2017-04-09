@@ -25,8 +25,35 @@ class Actions(object):
     subtotals_sum = 0
     subtotals_key = None
 
-    def __init__(self):
-        self.store = Store()
+    def __init__(self, store_file_path=None):
+        if store_file_path is None:
+            ext = ''
+        else:
+            _, ext = os.path.splitext(store_file_path)
+
+        store = {
+            '.csv' : 'csv',
+            '.sqlite': 'sqlite',
+            '.json' : 'json',
+            '.txt' : 'csv'
+        }
+        store_type = store.get(ext, 'csv')
+        if store_type == 'csv':
+            from .store_csv import Store_csv
+            self.store = Store_csv(store_file_path)
+        elif store_type == 'json':
+            from .store_json import Store_json
+            self.store = Store_json(store_file_path)
+        self.use_color = True
+
+    def red(self, txt):
+        return red(txt, self.use_color )
+
+    def yellow(self, txt):
+        return yellow(txt, self.use_color)
+
+    def green(self,txt):
+        return green(txt, self.use_color)
 
     def action_on(self, task=None, project=None, ago=None):
         git = Git()
@@ -59,7 +86,7 @@ class Actions(object):
 
         current = self.store.get_current()
         if current:
-            print('You are already working on task {}. Stop it or use a different sheet.'.format(green(current['task'])),
+            print('You are already working on task {}. Stop it or use a different sheet.'.format(self.green(current['task'])),
                   file=sys.stderr)
             raise SystemExit(1)
 
@@ -67,9 +94,9 @@ class Actions(object):
 
         print('{} working on task {}{} {}.'.format(
             verb_text,
-            green(task),
-            ' of project {}'.format(red(project)) if project else '',
-            yellow(time_text)
+            self.green(task),
+            ' of project {}'.format(self.red(project)) if project else '',
+            self.yellow(time_text)
         ))
 
     # def action_fin(time, back_from_interrupt=True):
@@ -83,8 +110,9 @@ class Actions(object):
 
         self.store.finish_tracking(current, now)
         print('You were working on {}{} for {} and task is stopped now.'.format(
-            green(current['task']),
-            ' of project {}'.format(red(current['project'])) if current['project'] else '',
+            self.green(current['task']),
+            ' of project {}'.format(
+                self.red(current['project'])) if current['project'] else '',
             now.diff_for_humans(current['start'], absolute=True)
         ))
 
@@ -105,12 +133,12 @@ class Actions(object):
             diff = pendulum.now().diff_for_humans(current['start'], absolute=True)
             if short:
                 print('on {}/{} for {}.'.format(
-                    red(current['project']),
-                    green(current['task']),
+                    self.red(current['project']),
+                    self.green(current['task']),
                     diff))
             else:
                 print('You have been working on {0} for {1}.'.format(
-                    green(current['task']), diff))
+                    self.green(current['task']), diff))
 
         except SystemExit:
             if short:
@@ -341,38 +369,14 @@ class Actions(object):
     #           ('s' if tag_count > 1 else '') + '.')
     #
     #
-    # def action_edit():
-    #     if 'EDITOR' not in os.environ:
-    #         print("Please set the 'EDITOR' environment variable", file=sys.stderr)
-    #         raise SystemExit(1)
-    #
-    #     data = store.load()
-    #     yml = yaml.safe_dump(data, default_flow_style=False, allow_unicode=True)
-    #
-    #     cmd = os.getenv('EDITOR')
-    #     fd, temp_path = tempfile.mkstemp(prefix='ti.')
-    #     with open(temp_path, "r+") as f:
-    #         f.write(yml.replace('\n- ', '\n\n- '))
-    #         f.seek(0)
-    #         subprocess.check_call(cmd + ' ' + temp_path, shell=True)
-    #         yml = f.read()
-    #         f.truncate()
-    #         f.close()
-    #
-    #     os.close(fd)
-    #     os.remove(temp_path)
-    #
-    #     try:
-    #         data = yaml.load(yml)
-    #     except:
-    #         print("Oops, that YAML didn't appear to be valid!", file=sys.stderr)
-    #         raise SystemExit(1)
-    #
-    #     store.dump(data)
-    #
-    # def is_working():
-    #     data = store.load()
-    #     return data.get('work') and 'end' not in data['work'][-1]
+    def action_edit(self):
+        if 'EDITOR' not in os.environ:
+            print("Please set the 'EDITOR' environment variable", file=sys.stderr)
+            raise SystemExit(1)
+
+        self.store.edit(os.getenv('EDITOR'))
+
+
 
     def none_if_equal_to_last(self, key, value):
         if key in self.equal_to_last and self.equal_to_last[key] == value:
