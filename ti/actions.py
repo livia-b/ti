@@ -244,21 +244,36 @@ class Actions(object):
                 ]
         print('\n' + tabulate(data, headers=headers))
 
-    def action_report(self, period):
+    def action_report(self, period = 'month', period_end = None, split_day = True):
         now = pendulum.now()
 
         if period == 'today':
             today = now.to_date_string()
-            results = self.store.get_aggregated_logs(today, today)
+            period = today
+            period_end = today
 
         elif period == 'week':
-            results = self.store.get_aggregated_logs(now.start_of('week').to_date_string(),
-                                                     now.end_of('week').to_date_string())
+            period = now.start_of('week').to_date_string()
+            period_end = now.end_of('week').to_date_string()
 
-        # period is month
+        elif period == 'month':
+            period = now.start_of('month').to_date_string()
+            period_end = now.end_of('month').to_date_string()
+
         else:
-            results = self.store.get_aggregated_logs(now.start_of('month').to_date_string(),
-                                                     now.end_of('month').to_date_string())
+            if period_end is None:
+                period_end = now.to_date_string()
+
+        if split_day:
+            sub_period_start = pendulum.parse(period)
+            sub_period_end = sub_period_start.add(days=1)
+            while (sub_period_end <= period_end):
+                print(sub_period_start.to_formatted_date_string())
+                self.action_report(sub_period_start.to_date_string(), sub_period_end.to_date_string(), split_day=False)
+                sub_period_start = sub_period_end
+                sub_period_end = sub_period_end.add(days=1)
+
+        results = self.store.get_aggregated_logs(period, period_end)
 
         data = []
         headers = [
