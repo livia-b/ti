@@ -242,6 +242,9 @@ class Actions(object):
         ]
         total = 0
         for log in results:
+            if log.get('total_seconds', None) is None:
+                print ("Task {} is still running, excluded from report".format(log['task']))
+                continue
             total += log['total_seconds']
             subtotals = self.subtotals(log['project'], log['total_seconds'])
             if subtotals:

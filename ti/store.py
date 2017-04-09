@@ -17,7 +17,7 @@ class Store(object):
         with self.conn:
             res = self.conn.execute('PRAGMA TABLE_INFO(tracking)')
             names = [tup[1] for tup in res.fetchall()]
-            if not all(x in self.fields for x in names):
+            if len(names) == 0 or not all(x in self.fields for x in names):
                 self.create_schema()
 
     def create_schema(self):
@@ -44,7 +44,7 @@ class Store(object):
         c.execute("select * from tracking where is_current = 1 order by start desc;")
         row = c.fetchone()
         if row:
-            return row
+            return dict(row)
         else:
             return None
 
@@ -62,11 +62,11 @@ class Store(object):
         with self.conn:
             c = self.conn.execute("select * from tracking where start_date >= ? and start_date <= ? order by start",
                                   (str(gte), str(lte)))
-            return c.fetchall()
+            return (dict(i) for i in c.fetchall())
 
     def get_aggregated_logs(self, gte, lte):
         with self.conn:
             c = self.conn.execute("select project, task, sum(in_seconds) as total_seconds from tracking "
                                   "where start_date >= ? and start_date <= ? group by project, task",
                                   (str(gte), str(lte)))
-            return c.fetchall()
+            return (dict(i) for i in c.fetchall())
